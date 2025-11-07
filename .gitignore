@@ -62,3 +62,9 @@ Thumbs.db
 *.swp
 *.swo
 *.cmake
+
+# Archivos sensibles / innecesarios
+firebase.json
+.metadata
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
