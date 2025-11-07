@@ -1,3 +1,4 @@
+// lib/pages/cuenta/notificaciones.dart
 import 'package:flutter/material.dart';
 
 class NotificacionesPage extends StatefulWidget {

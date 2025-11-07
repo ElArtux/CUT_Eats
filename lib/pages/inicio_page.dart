@@ -1,3 +1,4 @@
+// lib/pages/inicio_page.dart
 import 'package:flutter/material.dart';
 import 'sistema_tiendas/tienda_service.dart';
 import 'sistema_tiendas/tienda_detalle_page.dart';

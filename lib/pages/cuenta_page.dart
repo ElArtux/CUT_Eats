@@ -1,3 +1,4 @@
+// lib/pages/cuenta_page.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../mi_tienda/crear_tienda_page.dart';
