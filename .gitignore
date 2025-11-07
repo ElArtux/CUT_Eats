@@ -1,0 +1,64 @@
+# =========================
+# FLUTTER SPECIFIC
+# =========================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+build/
+generated_plugin_registrant.dart
+
+# Remove pubspec.lock for apps (not packages)
+pubspec.lock
+
+# =========================
+# ANDROID
+# =========================
+*.iml
+.gradle/
+local.properties
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/build/
+
+# Keystore files (important!)
+android/app/**/*.keystore
+android/app/**/*.jks
+
+# =========================
+# iOS
+# =========================
+ios/Pods/
+ios/.symlinks
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Runner.xcworkspace/
+xcuserdata/
+DerivedData/
+
+# =========================
+# MACOS / WINDOWS / LINUX
+# =========================
+*.lock
+**/build/
+.macos/
+.windows/
+.linux/
+
+# =========================
+# COMMON SYSTEM FILES
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE / EDITOR SPECIFIC
+# =========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*.cmake

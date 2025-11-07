@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "267667628917",
+    "project_id": "cuteats-72114",
+    "storage_bucket": "cuteats-72114.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:267667628917:android:e961ff2e50ef2d8361a93c",
+        "android_client_info": {
+          "package_name": "com.example.untitled"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "267667628917-mg7gck6ftafsg5uerbhnod4fvgrlreh2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.untitled",
+            "certificate_hash": "92bb29fd266a34b8d8c184ad129e238a304d3fc6"
+          }
+        },
+        {
+          "client_id": "267667628917-q6qoaeo80fsg9p366idukd81o8svifia.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzXkfPXk1XhKNO3J11cAgso5D9nbWo-qA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "267667628917-q6qoaeo80fsg9p366idukd81o8svifia.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "267667628917-h6plbl1it41hcjphnib58ago2a1g0216.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.untitled"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
