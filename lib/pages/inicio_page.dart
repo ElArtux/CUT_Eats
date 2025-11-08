@@ -150,6 +150,51 @@ class _HomePageState extends State<HomePage> {
     return '${fmt(abre)} - ${fmt(cierra)}';
   }
 
+  // --- Icono por categoría ---
+  IconData _iconoPorCategoria(String? categoria) {
+    switch (categoria) {
+      case "Comida":
+        return Icons.fastfood;
+      case "Postres":
+        return Icons.cake;
+      case "Tecnología":
+        return Icons.devices;
+      default:
+        return Icons.store;
+    }
+  }
+
+  // --- Tarjeta de categoría ---
+  Widget _buildCategoryCard(IconData icon, String title,
+      ValueChanged<String> onTap) {
+    return GestureDetector(
+      onTap: () => onTap(title),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6EED9),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 48, color: const Color(0xFF0B2239)),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xFF0B2239),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -180,14 +225,12 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔍 Buscador
             TextField(
               onChanged: _buscarTiendas,
               decoration: InputDecoration(
                 hintText: "Buscar restaurantes o artículos...",
                 hintStyle: const TextStyle(color: Colors.white70),
-                prefixIcon:
-                const Icon(Icons.search, color: Colors.white70),
+                prefixIcon: const Icon(Icons.search, color: Colors.white70),
                 filled: true,
                 fillColor: const Color(0xFF143657),
                 border: OutlineInputBorder(
@@ -225,12 +268,12 @@ class _HomePageState extends State<HomePage> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _buildCategoryCard(Icons.fastfood, "Comida",
-                      _filtrarPorCategoria),
-                  _buildCategoryCard(Icons.cake, "Postres",
-                      _filtrarPorCategoria),
-                  _buildCategoryCard(Icons.devices, "Tecnología",
-                      _filtrarPorCategoria),
+                  _buildCategoryCard(
+                      Icons.fastfood, "Comida", _filtrarPorCategoria),
+                  _buildCategoryCard(
+                      Icons.cake, "Postres", _filtrarPorCategoria),
+                  _buildCategoryCard(
+                      Icons.devices, "Tecnología", _filtrarPorCategoria),
                   _buildCategoryCard(
                       Icons.more_horiz, "Más+", _filtrarPorCategoria),
                 ],
@@ -238,7 +281,6 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 24),
             ],
 
-            // 🏪 Lista de tiendas
             const Text(
               "Tiendas disponibles",
               style: TextStyle(
@@ -263,9 +305,15 @@ class _HomePageState extends State<HomePage> {
               Column(
                 children: _tiendasFiltradas.map((tienda) {
                   final abierta = _estaAbierta(tienda);
+
+                  // Valores para la tarjeta
+                  final nombre = tienda['nombre'] ?? 'Sin nombre';
+                  final descripcion = tienda['descripcion'] ?? '';
+                  final portadaUrl = (tienda['portadaUrl'] ?? '').toString();
+                  final categoria = tienda['categoria'] as String?;
+
                   return GestureDetector(
                     onTap: () {
-                      // 🔗 Navegar a la página de detalle
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -281,47 +329,104 @@ class _HomePageState extends State<HomePage> {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: Colors.white24),
                       ),
-                      child: ListTile(
-                        leading: const Icon(Icons.store,
-                            color: Color(0xFFF6EED9), size: 36),
-                        title: Text(
-                          tienda['nombre'] ?? 'Sin nombre',
-                          style: const TextStyle(
-                            color: Color(0xFFF6EED9),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      // Fixed height card so all shops measure the same
+                      child: SizedBox(
+                        height: 112, // altura fija uniforme
+                        child: Row(
                           children: [
-                            Text(
-                              tienda['descripcion'] ?? 'Sin descripción',
-                              style:
-                              const TextStyle(color: Colors.white70),
+                            // Imagen/ícono (lado izquierdo)
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                bottomLeft: Radius.circular(16),
+                              ),
+                              child: Container(
+                                width: 112,
+                                height: 112,
+                                color: const Color(0xFF0E2D44),
+                                child: (portadaUrl.isNotEmpty)
+                                    ? Image.network(
+                                  portadaUrl,
+                                  fit: BoxFit.cover,
+                                  width: 112,
+                                  height: 112,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // fallback a icono por categoría si falla la carga
+                                    return Center(
+                                      child: Icon(_iconoPorCategoria(categoria),
+                                          color: Colors.white70, size: 40),
+                                    );
+                                  },
+                                )
+                                    : Center(
+                                  child: Icon(
+                                    _iconoPorCategoria(categoria),
+                                    color: const Color(0xFFF6EED9),
+                                    size: 40,
+                                  ),
+                                ),
+                              ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _resumenHorarioDeTienda(tienda),
-                              style: const TextStyle(
-                                  color: Colors.white54, fontSize: 12),
+
+                            const SizedBox(width: 12),
+
+                            // Texto (nombre, desc corta, horario)
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      nombre,
+                                      style: const TextStyle(
+                                        color: Color(0xFFF6EED9),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      descripcion,
+                                      style: const TextStyle(
+                                          color: Colors.white70),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _resumenHorarioDeTienda(tienda),
+                                      style: const TextStyle(
+                                          color: Colors.white54, fontSize: 12),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: abierta ? Colors.greenAccent : Colors
+                                      .redAccent,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  abierta ? "Abierto" : "Cerrado",
+                                  style: const TextStyle(color: Colors.black,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
                             ),
                           ],
-                        ),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: abierta
-                                ? Colors.greenAccent
-                                : Colors.redAccent,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            abierta ? "Abierto" : "Cerrado",
-                            style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold),
-                          ),
                         ),
                       ),
                     ),
@@ -329,36 +434,6 @@ class _HomePageState extends State<HomePage> {
                 }).toList(),
               ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryCard(
-      IconData icon, String title, Function(String) onTap) {
-    return GestureDetector(
-      onTap: () => onTap(title),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFF6EED9),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 48, color: const Color(0xFF0B2239)),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Color(0xFF0B2239),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

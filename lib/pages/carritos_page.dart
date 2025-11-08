@@ -69,7 +69,6 @@ class _CarritoPageState extends State<CarritoPage> {
   }
 
   int _totalProductos(Map<String, dynamic> productos) {
-    // fold con tipos explícitos para evitar el error de types
     return productos.values.fold<int>(
       0,
           (int sum, dynamic v) {
@@ -80,7 +79,6 @@ class _CarritoPageState extends State<CarritoPage> {
   }
 
   Future<void> _abrirTienda(Map<String, dynamic> tiendaEnCarrito) async {
-    // Si el carrito guarda un id de tienda, intentamos obtener la tienda completa desde 'tiendas/{id}'
     final id = tiendaEnCarrito['id']?.toString();
     Map<String, dynamic> tiendaFinal = Map<String, dynamic>.from(tiendaEnCarrito);
 
@@ -90,16 +88,13 @@ class _CarritoPageState extends State<CarritoPage> {
         if (doc.exists && doc.data() != null) {
           tiendaFinal = {...doc.data() as Map<String, dynamic>, 'id': doc.id};
         } else {
-          // si no existe doc, aseguramos que el mapa tenga el id
           tiendaFinal['id'] = id;
         }
       } catch (e) {
-        // si falla la consulta dejamos el mapa tal cual vino
         tiendaFinal['id'] = id;
       }
     }
 
-    // Navegamos a TiendaDetallePage con el map completo (TiendaDetallePage carga el carrito guardado por sí sola)
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => TiendaDetallePage(tienda: tiendaFinal)),
@@ -112,13 +107,26 @@ class _CarritoPageState extends State<CarritoPage> {
       backgroundColor: const Color(0xFF0B2239),
       appBar: AppBar(
         backgroundColor: const Color(0xFF143657),
-        title: const Text('Mis carritos', style: TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          'Mis carritos',
+          style: TextStyle(
+            color: Color(0xFFF6EED9),
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Color(0xFFF6EED9)),
       ),
       body: cargando
           ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : carritos.isEmpty
-          ? const Center(child: Text('No tienes carritos guardados', style: TextStyle(color: Colors.white70)))
+          ? const Center(
+        child: Text(
+          'No tienes carritos guardados',
+          style: TextStyle(color: Colors.white70),
+        ),
+      )
           : RefreshIndicator(
         onRefresh: _cargarCarritos,
         color: Colors.white,
@@ -152,11 +160,20 @@ class _CarritoPageState extends State<CarritoPage> {
                   child: Center(
                     child: Text(
                       nombre.isNotEmpty ? nombre[0].toUpperCase() : 'T',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-                title: Text(nombre, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                title: Text(
+                  nombre,
+                  style: const TextStyle(
+                    color: Color(0xFFF6EED9),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 subtitle: Text(
                   '$total producto${total == 1 ? '' : 's'} guardado${total == 1 ? '' : 's'}',
                   style: const TextStyle(color: Colors.white70),
@@ -167,11 +184,36 @@ class _CarritoPageState extends State<CarritoPage> {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        title: const Text('Eliminar carrito'),
-                        content: const Text('¿Eliminar este carrito guardado?'),
+                        backgroundColor: const Color(0xFF143657),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        title: const Text(
+                          'Eliminar carrito',
+                          style: TextStyle(
+                            color: Color(0xFFF6EED9),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        content: const Text(
+                          '¿Eliminar este carrito guardado?',
+                          style: TextStyle(color: Colors.white70),
+                        ),
                         actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-                          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Eliminar')),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text(
+                              'Cancelar',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text(
+                              'Eliminar',
+                              style: TextStyle(color: Colors.redAccent),
+                            ),
+                          ),
                         ],
                       ),
                     );

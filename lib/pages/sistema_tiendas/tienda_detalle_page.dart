@@ -108,13 +108,11 @@ class _TiendaDetallePageState extends State<TiendaDetallePage> {
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     final nombre = widget.tienda['nombre'] ?? "Tienda";
     final descripcion = widget.tienda['descripcion'] ?? "";
-
-    // dejamos espacio para FAB + barra de navegación (si existe)
+    final portadaUrl = widget.tienda['portadaUrl'] as String?;
     final bottomPadding = MediaQuery.of(context).padding.bottom + 96.0;
 
     return Scaffold(
@@ -136,11 +134,15 @@ class _TiendaDetallePageState extends State<TiendaDetallePage> {
           : ListView(
         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
         children: [
-          if (widget.tienda['imagen'] != null)
+          if (portadaUrl != null && portadaUrl.isNotEmpty)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(widget.tienda['imagen'],
-                  height: 160, width: double.infinity, fit: BoxFit.cover),
+              child: Image.network(
+                portadaUrl,
+                height: 160,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
           const SizedBox(height: 12),
           Text(nombre,
@@ -159,10 +161,9 @@ class _TiendaDetallePageState extends State<TiendaDetallePage> {
           const SizedBox(height: 10),
           if (productosLocal.isEmpty)
             const Center(
-                child:
-                Text('No hay productos disponibles', style: TextStyle(color: Colors.white70)))
+                child: Text('No hay productos disponibles',
+                    style: TextStyle(color: Colors.white70)))
           else
-          // cada fila tendrá altura fija para evitar desbordes
             ...productosLocal.map((p) {
               final id = p['id'] as String;
               final nombreP = p['nombre'] ?? '';
@@ -176,47 +177,54 @@ class _TiendaDetallePageState extends State<TiendaDetallePage> {
                     color: const Color(0xFF143657),
                     borderRadius: BorderRadius.circular(12)),
                 child: SizedBox(
-                  height: 88, // altura fija y suficiente para título, subtítulo y botón
+                  height: 88,
                   child: Row(
                     children: [
-                      // leading
                       Padding(
-                        padding: const EdgeInsets.only(left: 12, right: 12),
-                        child: (imagen != null)
+                        padding:
+                        const EdgeInsets.only(left: 12, right: 12),
+                        child: (imagen != null && imagen.isNotEmpty)
                             ? ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(imagen, width: 56, height: 56, fit: BoxFit.cover),
+                          child: Image.network(imagen,
+                              width: 56,
+                              height: 56,
+                              fit: BoxFit.cover),
                         )
                             : Container(
                           width: 56,
                           height: 56,
-                          decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(8)),
-                          child: const Icon(Icons.fastfood, color: Colors.white70),
+                          decoration: BoxDecoration(
+                              color: Colors.black12,
+                              borderRadius:
+                              BorderRadius.circular(8)),
+                          child: const Icon(Icons.fastfood,
+                              color: Colors.white70),
                         ),
                       ),
-
-                      // titulo + subtitulo
                       Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(nombreP,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis),
                             const SizedBox(height: 6),
                             Text(descripcionP,
-                                style: const TextStyle(color: Colors.white70),
+                                style: const TextStyle(
+                                    color: Colors.white70),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis),
                           ],
                         ),
                       ),
-
-                      // precio + boton (columna compacta)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding:
+                        const EdgeInsets.symmetric(horizontal: 12),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -225,7 +233,8 @@ class _TiendaDetallePageState extends State<TiendaDetallePage> {
                               width: 84,
                               child: Text(
                                 '$precio MXN',
-                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 12),
                                 textAlign: TextAlign.center,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -238,10 +247,15 @@ class _TiendaDetallePageState extends State<TiendaDetallePage> {
                                 backgroundColor: const Color(0xFFF6EED9),
                                 foregroundColor: const Color(0xFF0B2239),
                                 minimumSize: const Size(72, 34),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 6),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                    BorderRadius.circular(6)),
                               ),
-                              child: const Text('Agregar', textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
+                              child: const Text('Agregar',
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.ellipsis),
                             ),
                           ],
                         ),

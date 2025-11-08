@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../sistema_chats/chat_conversation_page.dart'; // importamos la página de chat
 
 class CarritoModal extends StatefulWidget {
   final Map<String, dynamic> tienda;
@@ -119,6 +120,7 @@ class _CarritoModalState extends State<CarritoModal> {
     Navigator.pop(context);
   }
 
+  // ✅ FUNCIÓN MODIFICADA: envía el pedido al chat de la tienda, vacía el carrito y abre el chat
   Future<void> _hacerPedidoConfirm() async {
     final res = await showDialog<bool>(context: context, builder: (_) {
       return AlertDialog(
@@ -136,51 +138,93 @@ class _CarritoModalState extends State<CarritoModal> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Debes iniciar sesión para enviar el pedido'))
+          const SnackBar(content: Text('Debes iniciar sesión para hacer un pedido'))
       );
       return;
     }
 
-    setState(() => guardando = true);
-
-    final chatId = '${user.uid}_${widget.tienda['id']}';
-
-    // Construir mensaje con detalle del carrito
-    String mensaje = 'Pedido:\n';
+    // Construir mensaje bonito con los productos
+    final buffer = StringBuffer();
+    buffer.writeln("🛒 *Nuevo pedido* de ${user.email ?? 'Cliente'}\n");
+    buffer.writeln("Tienda: ${widget.tienda['nombre']}\n");
+    buffer.writeln("Productos:");
     double total = 0;
     carritoTemp.forEach((id, cantidad) {
       final producto = widget.productosDisponibles[id];
-      final nombre = producto != null ? producto['nombre'] ?? 'Producto' : 'Producto';
-      final precio = producto != null ? (producto['precio'] ?? 0) : 0;
-      total += precio * cantidad;
-      mensaje += '- $nombre x$cantidad\n';
+      final nombre = producto?['nombre'] ?? 'Producto';
+      final precio = (producto?['precio'] ?? 0) is num
+          ? (producto?['precio'] as num).toDouble()
+          : double.tryParse('${producto?['precio'] ?? 0}') ?? 0.0;
+      final subtotal = precio * (cantidad);
+      total += subtotal;
+      buffer.writeln("• $nombre  x$cantidad  → ${subtotal.toStringAsFixed(2)} MXN");
     });
-    mensaje += 'Total: $total MXN';
+    buffer.writeln("\nTotal: ${total.toStringAsFixed(2)} MXN");
+    buffer.writeln("\nGracias. Quedo pendiente de confirmación ✅");
 
-    final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+    final mensajePedido = buffer.toString();
 
-    await chatRef.set({
-      'participantes': [user.uid, widget.tienda['id']],
-      'tienda': {
-        'id': widget.tienda['id'],
-        'nombre': widget.tienda['nombre'],
-      },
-      'ultimoMensaje': mensaje,
-      'fechaUltimoMensaje': FieldValue.serverTimestamp(),
+    // Crear chatId igual que en chat_conversation_page
+    String _buildKey(bool isTienda, String uid) {
+      return "${isTienda ? 'tienda' : 'usuario'}_$uid";
+    }
+
+    final tiendaIdStr = (widget.tienda['id'] ?? "").toString();
+    final myKey = _buildKey(false, user.uid); // cliente siempre es usuario
+    final otherKey = _buildKey(true, tiendaIdStr);
+    final keys = [myKey, otherKey]..sort();
+    final chatId = keys.join("__");
+
+    final ref = FirebaseFirestore.instance.collection("chats").doc(chatId);
+    final exists = await ref.get();
+    if (!exists.exists) {
+      await ref.set({
+        "participants": keys,
+        "lastMessage": "",
+        "lastUpdated": FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Enviar mensaje
+    await ref.collection("mensajes").add({
+      "texto": mensajePedido,
+      "emisorKey": myKey,
+      "fecha": FieldValue.serverTimestamp(),
     });
 
-    await chatRef.collection('mensajes').add({
-      'texto': mensaje,
-      'emisorId': user.uid,
-      'fecha': FieldValue.serverTimestamp(),
+    await ref.update({
+      "lastMessage": mensajePedido,
+      "lastUpdated": FieldValue.serverTimestamp(),
     });
 
+    // Vaciar carrito guardado en Firebase (si existía)
+    final tiendaDocId = widget.tienda['id']?.toString() ?? 'tienda_${widget.tienda['nombre']}';
+    final refCarrito = FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(user.uid)
+        .collection('carritos_guardados')
+        .doc(tiendaDocId);
+    final snapshot = await refCarrito.get();
+    if (snapshot.exists) await refCarrito.delete();
+
+    setState(() {
+      carritoTemp.clear();
+    });
     widget.onCarritoActualizado({});
-    setState(() => guardando = false);
-    Navigator.pop(context);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pedido enviado y chat creado'))
+    // Cerrar modal y abrir chat
+    Navigator.pop(context); // cerrar modal
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatConversacionPage(
+          currentUserId: user.uid,
+          otherUserId: tiendaIdStr,
+          otherUserName: widget.tienda['nombre'] ?? "Tienda",
+          modoTienda: false, // cliente es usuario
+          otherIsTienda: true,
+        ),
+      ),
     );
   }
 
@@ -202,7 +246,10 @@ class _CarritoModalState extends State<CarritoModal> {
             ]),
             const SizedBox(height: 8),
             if (carritoTemp.isEmpty)
-              const Padding(padding: EdgeInsets.all(12), child: Text('El carrito está vacío', style: TextStyle(color: Colors.white70)))
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Text('El carrito está vacío', style: TextStyle(color: Colors.white70)),
+              )
             else
               Flexible(
                 child: ListView(
@@ -214,34 +261,46 @@ class _CarritoModalState extends State<CarritoModal> {
                     final cantidad = carritoTemp[id] ?? 0;
                     return Container(
                       margin: const EdgeInsets.symmetric(vertical: 6),
-                      decoration: BoxDecoration(color: const Color(0xFF0B2239), borderRadius: BorderRadius.circular(12)),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0B2239),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: ListTile(
                         title: Text(nombre, style: const TextStyle(color: Colors.white)),
-                        subtitle: Text('${precio * cantidad} MXN  (x$cantidad)', style: const TextStyle(color: Colors.white70)),
-                        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                          IconButton(onPressed: () => _disminuir(id), icon: const Icon(Icons.remove, color: Colors.white70)),
-                          IconButton(onPressed: () => _aumentar(id), icon: const Icon(Icons.add, color: Colors.white70)),
-                          IconButton(onPressed: () => _eliminar(id), icon: const Icon(Icons.delete, color: Colors.redAccent)),
-                        ]),
+                        subtitle: Text('${(precio is num ? precio * cantidad : 0)} MXN  (x$cantidad)',
+                            style: const TextStyle(color: Colors.white70)),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(onPressed: () => _disminuir(id), icon: const Icon(Icons.remove, color: Colors.white70)),
+                            IconButton(onPressed: () => _aumentar(id), icon: const Icon(Icons.add, color: Colors.white70)),
+                            IconButton(onPressed: () => _eliminar(id), icon: const Icon(Icons.delete, color: Colors.redAccent)),
+                          ],
+                        ),
                       ),
                     );
                   }).toList(),
                 ),
               ),
             const SizedBox(height: 12),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              IconButton(onPressed: _vaciarCarritoConfirm, icon: const Icon(Icons.delete_forever, color: Colors.redAccent)),
-              ElevatedButton(
-                onPressed: guardando ? null : _guardarCarritoEnFirebase,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.amberAccent, foregroundColor: Colors.black),
-                child: guardando ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Guardar carrito'),
-              ),
-              ElevatedButton(
-                onPressed: carritoTemp.isEmpty || guardando ? null : _hacerPedidoConfirm,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent, foregroundColor: Colors.black),
-                child: const Text('Hacer pedido'),
-              ),
-            ])
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(onPressed: _vaciarCarritoConfirm, icon: const Icon(Icons.delete_forever, color: Colors.redAccent)),
+                ElevatedButton(
+                  onPressed: guardando ? null : _guardarCarritoEnFirebase,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.amberAccent, foregroundColor: Colors.black),
+                  child: guardando
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Guardar carrito'),
+                ),
+                ElevatedButton(
+                  onPressed: carritoTemp.isEmpty || guardando ? null : _hacerPedidoConfirm,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent, foregroundColor: Colors.black),
+                  child: const Text('Hacer pedido'),
+                ),
+              ],
+            ),
           ]),
         ),
       ),

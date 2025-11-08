@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:firebase_storage/firebase_storage.dart';
 import 'horario_editor.dart'; // <-- archivo separado (ver abajo)
 
 class CrearTiendaPage extends StatefulWidget {
@@ -31,6 +31,8 @@ class _CrearTiendaPageState extends State<CrearTiendaPage> {
   ];
 
   File? _imagenPortada;
+  String? _portadaUrl;   // URL guardada en Firestore
+  String? _portadaId;    // ID del archivo en Storage
   final ImagePicker _picker = ImagePicker();
   bool _cargando = true;
   bool _modoEdicion = false;
@@ -111,6 +113,8 @@ class _CrearTiendaPageState extends State<CrearTiendaPage> {
         _nombreController.text = data['nombre'] ?? '';
         _descripcionController.text = data['descripcion'] ?? '';
         _categoria = data['categoria'];
+        _portadaUrl = data['portadaUrl'];
+        _portadaId = data['portadaId'];
 
         // Horarios (conversión segura)
         _horarios = _mapToHorarios(data['horarios']);
@@ -215,6 +219,19 @@ class _CrearTiendaPageState extends State<CrearTiendaPage> {
   Future<void> _guardarTienda() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Si hay nueva imagen seleccionada, subirla a Storage
+    if (_imagenPortada != null) {
+      final uid = user!.uid;
+      final nombreArchivo = "portada_${uid}_${DateTime.now().millisecondsSinceEpoch}.jpg";
+      final ref = FirebaseStorage.instance.ref().child("tiendas/$uid/$nombreArchivo");
+
+      await ref.putFile(_imagenPortada!);
+      final url = await ref.getDownloadURL();
+
+      _portadaId = nombreArchivo;
+      _portadaUrl = url;
+    }
+
     final tiendaData = {
       'nombre': _nombreController.text.trim(),
       'descripcion': _descripcionController.text.trim(),
@@ -229,6 +246,8 @@ class _CrearTiendaPageState extends State<CrearTiendaPage> {
       'horarios': _horarios,
       'uid': user!.uid,
       'creado': FieldValue.serverTimestamp(),
+      'portadaId': _portadaId,
+      'portadaUrl': _portadaUrl,
     };
 
     try {
@@ -250,6 +269,7 @@ class _CrearTiendaPageState extends State<CrearTiendaPage> {
       );
     }
   }
+
 
   Future<void> _eliminarTiendaConfirmacion() async {
     final primeraConfirmacion = await showDialog<bool>(

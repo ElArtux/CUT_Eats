@@ -100,11 +100,16 @@ class CuentaPage extends StatelessWidget {
                 child: CircleAvatar(
                   radius: 50,
                   backgroundColor: const Color(0xFFF6EED9),
-                  child: const Icon(
+                  backgroundImage: user?.photoURL != null && user!.photoURL!.isNotEmpty
+                      ? NetworkImage(user.photoURL!)
+                      : null,
+                  child: (user?.photoURL == null || user!.photoURL!.isEmpty)
+                      ? const Icon(
                     Icons.person,
                     size: 60,
                     color: Color(0xFF0B2239),
-                  ),
+                  )
+                      : null,
                 ),
               ),
               const SizedBox(height: 20),
